@@ -4,9 +4,15 @@ import logger from "../middleware/logger.js";
 
 class MandateServiceClass {
 
-    get_all = async (user_id: string) => {
-        return await db.mandate.findMany({ where: { user_id }, orderBy: { createdAt: "desc" } });
-    }
+    get_all = async (user_id: string, status?: "PENDING" | "SUCCESS" | "FAILED") => {
+        return await db.mandate.findMany({
+            where: {
+                user_id,
+                ...(status ? { status } : {}),
+            },
+            orderBy: { createdAt: "desc" },
+        });
+    };
 
     get_by_fp_payment_id = async (fp_payment_id: string) => {
         return await db.mandate.findFirst({ where: { fp_payment_id } });
@@ -15,6 +21,7 @@ class MandateServiceClass {
     create = async (user_id: string, data: {
         mandate_id: string;
         amount: number;
+        bank_account: string;
         fp_bank_account_id: string;
         fp_payment_id?: string | null;
         start_date?: Date | null;
@@ -27,6 +34,7 @@ class MandateServiceClass {
                 user_id,
                 mandate_id: data.mandate_id,
                 amount: data.amount,
+                bank_account: data.bank_account,
                 fp_bank_account_id: data.fp_bank_account_id,
                 fp_payment_id: data.fp_payment_id ?? null,
                 start_date: data.start_date ?? null,

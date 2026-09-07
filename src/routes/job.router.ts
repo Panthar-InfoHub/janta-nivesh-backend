@@ -46,6 +46,8 @@ job_router.post("/mf-scheme-plan-sync", job_controller.mf_scheme_plan_sync_job);
 // Note: fund_category/sub_category give the group (Equity/Debt/Liquid) and coarse labels
 // (ELSS/FMP/FOF) - NOT the large/mid/flexi cap classification, which still has no source.
 job_router.post("/mf-scheme-v1-sync", job_controller.mf_scheme_v1_sync_job);
+// Fast logo backfill / refresh: maps amc_id from MfSchemePlan to logo_data_v2.json and sets MfProduct.img_url
+job_router.post("/mf-logo-sync", job_controller.mf_logo_sync_job);
 
 // Portfolio numbers (units, current value, XIRR) - synced from FP's Investor Reports into
 // MfHolding, not computed from MfTransactionPlan (see mf-holding.prisma for why: a fund can have

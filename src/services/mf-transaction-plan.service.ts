@@ -36,16 +36,145 @@ class MfTransactionPlanServiceClass {
      * a SIP are both PURCHASE), so a listing that filters on plan_type alone would mix them.
      * Callers listing plans must pass true.
      */
-    get_all = async (user_id: string, plan_type?: MfPlanType, systematic?: boolean) => {
+    get_all = async (
+        user_id: string,
+        plan_type?: MfPlanType,
+        systematic?: boolean,
+        state?: MfTransactionState,
+        include_product: boolean = true
+    ) => {
         return await db.mfTransactionPlan.findMany({
             where: {
                 user_id,
                 ...(plan_type ? { plan_type } : {}),
                 ...(systematic === undefined ? {} : { systematic }),
+                ...(state ? { state } : {}),
             },
-            orderBy: { createdAt: "desc" }
+            include: include_product ? {
+                mf_product: {
+                    select: {
+                        id: true,
+                        name: true,
+                        isin: true,
+                        img_url: true,
+                        latest_nav: true,
+                        latest_nav_date: true,
+                        scheme_plan: {
+                            select: {
+                                fund_category: true,
+                                sub_category: true,
+                                plan_type: true,
+                                option: true,
+                            },
+                        },
+                    },
+                },
+            } : undefined,
+            orderBy: { createdAt: "desc" },
         });
-    }
+    };
+
+    /**
+     * Paginated transaction listing with optional filters by plan_type, systematic, and state.
+     * Includes enriched fund catalogue details (name, isin, img_url logo, latest NAV).
+     */
+    get_paginated = async ({
+        user_id,
+        plan_type,
+        systematic,
+        state,
+        page = 1,
+        limit = 20,
+    }: {
+        user_id: string;
+        plan_type?: MfPlanType;
+        systematic?: boolean;
+        state?: MfTransactionState;
+        page?: number;
+        limit?: number;
+    }) => {
+        const where = {
+            user_id,
+            ...(plan_type ? { plan_type } : {}),
+            ...(systematic === undefined ? {} : { systematic }),
+            ...(state ? { state } : {}),
+        };
+
+        const [items, total] = await Promise.all([
+            db.mfTransactionPlan.findMany({
+                where,
+                select: {
+                    id: true,
+                    user_id: true,
+                    plan_type: true,
+                    fp_id: true,
+                    fp_old_id: true,
+                    fp_payment_id: true,
+                    mf_investment_account: true,
+                    scheme: true,
+                    folio_number: true,
+                    amount: true,
+                    units: true,
+                    systematic: true,
+                    frequency: true,
+                    installment_day: true,
+                    scheduled_on: true,
+                    number_of_installments: true,
+                    remaining_installments: true,
+                    state: true,
+                    payment_method: true,
+                    payment_source: true,
+                    switch_to_scheme: true,
+                    traded_on: true,
+                    submitted_at: true,
+                    succeeded_at: true,
+                    allotted_units: true,
+                    allotted_nav_date: true,
+                    purchased_amount: true,
+                    purchased_price: true,
+                    failed_at: true,
+                    reason: true,
+                    createdAt: true,
+                    updatedAt: true,
+                    // raw_response is omitted!
+
+                    // Relations are supported directly inside select:
+                    mf_product: {
+                        select: {
+                            id: true,
+                            name: true,
+                            isin: true,
+                            img_url: true,
+                            latest_nav: true,
+                            latest_nav_date: true,
+                            scheme_plan: {
+                                select: {
+                                    fund_category: true,
+                                    sub_category: true,
+                                    plan_type: true,
+                                    option: true,
+                                },
+                            },
+                        },
+                    },
+                },
+                orderBy: { createdAt: "desc" },
+                skip: (page - 1) * limit,
+                take: limit,
+            }),
+            db.mfTransactionPlan.count({ where }),
+        ]);
+
+        return {
+            items,
+            pagination: {
+                page,
+                limit,
+                total,
+                total_pages: Math.ceil(total / limit) || 1,
+            },
+        };
+    };
 
     get_by_fp_id = async (user_id: string, fp_plan_id: string) => {
         return await db.mfTransactionPlan.findFirst({ where: { user_id, fp_id: fp_plan_id } });
