@@ -86,7 +86,16 @@ class MfPurchasePlanControllerClass {
     get_purchase_plans = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const user_id = req.user?.id!;
-            const purchase_plans = await mf_transaction_plan_service.get_all(user_id, "PURCHASE", true);
+            const raw_state = (req.query.state as string)?.trim().toUpperCase();
+            const state = raw_state as any;
+
+            const purchase_plans = await mf_transaction_plan_service.get_all(
+                user_id,
+                "PURCHASE",
+                true,
+                state,
+                true
+            );
 
             res.status(200).json({
                 success: true,
