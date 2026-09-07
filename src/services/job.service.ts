@@ -128,6 +128,15 @@ class JobServiceClass {
     };
 
     /**
+     * Backfill/refresh AMC logos on MfProduct from logo_data_v2.json for all schemes with amc_id.
+     * Can be run independently without calling external FP endpoints.
+     */
+    mf_logo_sync_job = async () => {
+        logger.info("Starting MF AMC logo sync job...");
+        return await mf_scheme_v1_sync_service.sync_all_logos();
+    };
+
+    /**
      * Nightly refresh of MfHolding for every account. Same call any of our own controllers should
      * make right after a transaction succeeds (mf-holding-sync.service.ts) - this is the backstop
      * for settlement that happens without the user opening the app (an installment going through,

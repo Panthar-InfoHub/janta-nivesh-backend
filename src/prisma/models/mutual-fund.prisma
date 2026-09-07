@@ -121,6 +121,7 @@ model MfSchemePlan {
   fund_category String?
   sub_category  String?
   amfi_code     String?
+  amc_id        Int?
 
   close_ended    Boolean?
   lock_in        Boolean?

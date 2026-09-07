@@ -40,6 +40,7 @@ class MandateControllerClass {
             const mandate = await mandate_service.create(user_id, {
                 mandate_id: String(created.id),
                 amount: input.mandate_limit,
+                bank_account: primary_bank.bank_name,
                 fp_bank_account_id: String(primary_bank.fp_bank_account_old_id),
                 start_date: input.valid_from ? new Date(input.valid_from) : null,
                 end_date: input.valid_to ? new Date(input.valid_to) : null,
@@ -76,7 +77,12 @@ class MandateControllerClass {
     get_mandates = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const user_id = req.user?.id!;
-            const mandates = await mandate_service.get_all(user_id);
+            const raw_status = (req.query.status as string)?.trim().toUpperCase();
+            const status = (raw_status === "PENDING" || raw_status === "SUCCESS" || raw_status === "FAILED")
+                ? raw_status
+                : undefined;
+
+            const mandates = await mandate_service.get_all(user_id, status);
 
             res.status(200).json({
                 success: true,

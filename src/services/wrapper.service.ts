@@ -18,6 +18,25 @@ class WrapperServiceClass {
 
     private initializeStaticCache() {
         try {
+            const v2Path = path.join(process.cwd(), "logo_data_v2.json");
+            if (fs.existsSync(v2Path)) {
+                const fileContent = fs.readFileSync(v2Path, "utf-8");
+                const data = JSON.parse(fileContent);
+                if (Array.isArray(data)) {
+                    data.forEach((item: any) => {
+                        if (item.img) {
+                            if (item.amc_name) {
+                                this.logoDataCache.set(item.amc_name.toLowerCase(), item.img);
+                            }
+                            if (item.amc_id != null) {
+                                this.logoDataCache.set(String(item.amc_id), item.img);
+                            }
+                        }
+                    });
+                }
+                logger.info(`Loaded ${this.logoDataCache.size} entries into AMC logos cache from logo_data_v2.json.`);
+            }
+
             const filePath = path.join(process.cwd(), "logo_data.json");
             if (fs.existsSync(filePath)) {
                 const fileContent = fs.readFileSync(filePath, "utf-8");
@@ -25,17 +44,19 @@ class WrapperServiceClass {
                 if (Array.isArray(data)) {
                     data.forEach((item: any) => {
                         if (item.mutual_fund_name && item.logo_url) {
-                            // Store lowercase keys for case-insensitive matching
-                            this.logoDataCache.set(item.mutual_fund_name.toLowerCase(), item.logo_url);
+                            const key = item.mutual_fund_name.toLowerCase();
+                            if (!this.logoDataCache.has(key)) {
+                                this.logoDataCache.set(key, item.logo_url);
+                            }
                         }
                     });
                 }
-                logger.info(`Loaded ${this.logoDataCache.size} AMC logos from static JSON file.`);
-            } else {
-                logger.warn(`logo_data.json not found at ${filePath}`);
+                logger.info(`Total cached AMC logos: ${this.logoDataCache.size}.`);
+            } else if (!fs.existsSync(v2Path)) {
+                logger.warn(`Neither logo_data_v2.json nor logo_data.json found.`);
             }
         } catch (error) {
-            logger.error("Failed to load logo_data.json:", error);
+            logger.error("Failed to load logo data:", error);
         }
     }
 

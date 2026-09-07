@@ -302,6 +302,42 @@ class JobControllerClass {
             return;
         }
     };
+
+    mf_logo_sync_job = async (
+        req: Request,
+        res: Response,
+        next: NextFunction
+    ) => {
+        try {
+            const scheduler_token = req.headers["x-scheduler-token"];
+            const secret = process.env.SCHEDULER_SECRET || "default_secret";
+            if (scheduler_token !== secret) {
+                console.warn(
+                    `[SECURITY] Unauthorized attempt to access MF logo sync job with token: ${scheduler_token}`
+                );
+                throw new AppError(
+                    "Unauthorized: Invalid or missing scheduler token",
+                    401,
+                    "Unauthorized"
+                );
+            }
+            logger.info("Running MF logo sync job...");
+            const data = await job_service.mf_logo_sync_job();
+            res.status(200).json({
+                success: true,
+                message: "MF logo sync job completed successfully",
+                data,
+            });
+            return;
+        } catch (error: any) {
+            logger.error(
+                "Error while running MF logo sync job ==> ",
+                error.message
+            );
+            next(error);
+            return;
+        }
+    };
     mf_holding_sync_job = async (
         req: Request,
         res: Response,
